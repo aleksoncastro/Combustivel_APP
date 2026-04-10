@@ -38,3 +38,53 @@ Aplicativo mobile desenvolvido em **Flutter** para motoristas acompanharem seus 
 ---
 
 ## 📂 Estrutura do Projeto
+lib/
+├── main.dart                            # Ponto de entrada e navegação principal
+├── modelos/
+│   ├── veiculo.dart                     # Classe Veiculo
+│   └── abastecimento.dart               # Classe Abastecimento
+├── database/
+│   └── database_helper.dart             # Camada de persistência (shared_preferences)
+├── widgets/
+│   ├── texto_formatado_widget.dart      # Texto reutilizável estilizado
+│   ├── header_widget.dart               # AppBar reutilizável
+│   ├── resumo_card_widget.dart          # Card de resumo do Dashboard
+│   ├── abastecimento_card_widget.dart   # Card do ListView de abastecimentos
+│   ├── veiculo_card_widget.dart         # Card do ListView de veículos
+│   └── carrossel_destaques_widget.dart  # PageView.builder com indicadores
+└── telas/
+├── tela_dashboard.dart              # Tela 1 — Dashboard
+├── tela_historico.dart              # Tela 2 — Histórico
+├── tela_detalhe_abastecimento.dart  # Detalhe do abastecimento
+├── tela_veiculos.dart               # Tela 3 — Veículos
+├── tela_cadastro_veiculo.dart       # Formulário de veículo
+└── tela_cadastro_abastecimento.dart # Tela 4 — Cadastro de abastecimento
+
+---
+
+## 🚀 Como Executar
+
+**Pré-requisitos:** Flutter SDK instalado e configurado.
+
+```bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/combustivel_app.git
+
+# Entre na pasta
+cd combustivel_app
+
+# Instale as dependências
+flutter pub get
+
+# Execute no navegador
+flutter run -d chrome
+
+# Ou em um dispositivo Android
+flutter run
+```
+
+---
+
+## 👨‍💻 Desenvolvido por
+
+Alêkson C. de Souza — Programação Para Dispositivos Móveis I — UNITINS 2026.1
