@@ -1,3 +1,6 @@
+# Alêkson C. de Souza — Programação Para Dispositivos Móveis I — UNITINS 2026.1
+## Tema: *Controle de gastos com combustíveis de seus automóveis*
+
 # ⛽ Combustível App
 
 Aplicativo mobile desenvolvido em **Flutter** para motoristas acompanharem seus gastos com combustível, registrarem abastecimentos e monitorarem o desempenho dos seus veículos.
@@ -88,4 +91,4 @@ flutter run
 
 ## 👨‍💻 Desenvolvido por
 
-Alêkson C. de Souza — Programação Para Dispositivos Móveis I — UNITINS 2026.1
+
