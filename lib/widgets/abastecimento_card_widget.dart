@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../modelos/abastecimento.dart';
-import 'texto_formatado_widget.dart';
 
 class AbastecimentoCardWidget extends StatelessWidget {
   final Abastecimento abastecimento;
@@ -16,16 +15,11 @@ class AbastecimentoCardWidget extends StatelessWidget {
 
   Color get _corCombustivel {
     switch (abastecimento.tipoCombustivel) {
-      case 'Gasolina':
-        return Colors.orange;
-      case 'Etanol':
-        return Colors.green;
-      case 'Diesel':
-        return Colors.blueGrey;
-      case 'GNV':
-        return Colors.purple;
-      default:
-        return Colors.blue;
+      case 'Gasolina': return Colors.orange;
+      case 'Etanol':   return Colors.green;
+      case 'Diesel':   return Colors.blueGrey;
+      case 'GNV':      return Colors.purple;
+      default:         return Colors.blue;
     }
   }
 
@@ -50,18 +44,19 @@ class AbastecimentoCardWidget extends StatelessWidget {
           ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Ícone combustível
             Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: cor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.local_gas_station, color: cor, size: 26),
+              child: Icon(Icons.local_gas_station, color: cor, size: 24),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
             // Informações principais
             Expanded(
               child: Column(
@@ -70,16 +65,15 @@ class AbastecimentoCardWidget extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
                           color: cor.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: TextoFormatado(
-                          texto: abastecimento.tipoCombustivel,
+                        child: Text(
+                          abastecimento.tipoCombustivel,
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                             color: cor,
                           ),
@@ -87,79 +81,68 @@ class AbastecimentoCardWidget extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: TextoFormatado(
-                          texto: abastecimento.nomeVeiculo,
-                          textAlign: TextAlign.left,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
+                        child: Text(
+                          abastecimento.nomeVeiculo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  TextoFormatado(
-                    texto: abastecimento.posto,
-                    textAlign: TextAlign.left,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  const SizedBox(height: 3),
+                  Text(
+                    abastecimento.posto,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 2),
-                  Row(
+                  Wrap(
+                    spacing: 8,
                     children: [
-                      Icon(Icons.water_drop, size: 12, color: Colors.grey.shade500),
-                      const SizedBox(width: 2),
-                      TextoFormatado(
-                        texto: '${abastecimento.litros.toStringAsFixed(2)}L',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      Text(
+                        '${abastecimento.litros.toStringAsFixed(2)}L',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                       ),
-                      const SizedBox(width: 10),
-                      Icon(Icons.speed, size: 12, color: Colors.grey.shade500),
-                      const SizedBox(width: 2),
-                      TextoFormatado(
-                        texto: '${abastecimento.kmAtual.toStringAsFixed(0)} km',
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      Text(
+                        '${abastecimento.kmAtual.toStringAsFixed(0)} km',
+                        style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                       ),
-                      if (abastecimento.mediaConsumo != null) ...[
-                        const SizedBox(width: 10),
-                        TextoFormatado(
-                          texto:
-                              '${abastecimento.mediaConsumo!.toStringAsFixed(1)} km/L',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.green.shade600),
+                      if (abastecimento.mediaConsumo != null)
+                        Text(
+                          '${abastecimento.mediaConsumo!.toStringAsFixed(1)} km/L',
+                          style: TextStyle(fontSize: 11, color: Colors.green.shade600),
                         ),
-                      ],
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  TextoFormatado(
-                    texto: abastecimento.data,
-                    textAlign: TextAlign.left,
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                  Text(
+                    abastecimento.data,
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
                   ),
                 ],
               ),
             ),
-            // Valor e ação de deletar
+            const SizedBox(width: 8),
+            // Valor e deletar
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                TextoFormatado(
-                  texto: 'R\$ ${abastecimento.valorTotal.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1565C0),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    'R\$ ${abastecimento.valorTotal.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1565C0),
+                    ),
                   ),
                 ),
                 if (onDeletar != null)
                   GestureDetector(
                     onTap: onDeletar,
-                    child: Icon(Icons.delete_outline,
-                        color: Colors.red.shade300, size: 20),
+                    child: Icon(Icons.delete_outline, color: Colors.red.shade300, size: 20),
                   ),
               ],
             ),
