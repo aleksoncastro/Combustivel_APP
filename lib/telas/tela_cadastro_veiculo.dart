@@ -55,7 +55,7 @@ class _TelaCadastroVeiculoState extends State<TelaCadastroVeiculo> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('✅ Veículo salvo com sucesso!'),
+          content: Text('Veículo salvo com sucesso!'),
           backgroundColor: Colors.green,
         ),
       );

@@ -181,12 +181,12 @@ class _TelaDashboardState extends State<TelaDashboard> {
                   const SizedBox(height: 20),
 
                   // Carrossel de destaques (PageView.builder)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16, bottom: 10),
+                  const Padding(
+                    padding: EdgeInsets.only(left: 16, bottom: 10),
                     child: TextoFormatado(
                       texto: '⭐ Destaques',
                       textAlign: TextAlign.left,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -197,11 +197,11 @@ class _TelaDashboardState extends State<TelaDashboard> {
                   const SizedBox(height: 20),
 
                   // Últimos abastecimentos
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
-                        const TextoFormatado(
+                        TextoFormatado(
                           texto: '⛽ Últimos Abastecimentos',
                           textAlign: TextAlign.left,
                           style: TextStyle(
