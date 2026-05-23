@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
+import '../database/supabase_repository.dart';
 import '../modelos/abastecimento.dart';
 import '../widgets/abastecimento_card_widget.dart';
 import '../widgets/texto_formatado_widget.dart';
@@ -13,7 +13,7 @@ class TelaHistorico extends StatefulWidget {
 }
 
 class _TelaHistoricoState extends State<TelaHistorico> {
-  final _db = DatabaseHelper.instancia;
+  final _db = SupabaseRepository.instancia;
   List<Abastecimento> _todos = [];
   List<Abastecimento> _filtrados = [];
   bool _carregando = true;

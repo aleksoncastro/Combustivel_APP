@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
+import '../database/supabase_repository.dart';
 import '../modelos/veiculo.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/texto_formatado_widget.dart';
@@ -12,7 +12,7 @@ class TelaCadastroVeiculo extends StatefulWidget {
 }
 
 class _TelaCadastroVeiculoState extends State<TelaCadastroVeiculo> {
-  final _db = DatabaseHelper.instancia;
+  final _db = SupabaseRepository.instancia;
   final _nomeController = TextEditingController();
   final _modeloController = TextEditingController();
   final _placaController = TextEditingController();

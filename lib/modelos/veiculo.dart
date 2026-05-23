@@ -26,10 +26,10 @@ class Veiculo {
   factory Veiculo.fromMap(Map<String, dynamic> map) {
     return Veiculo(
       id: map['id'] as int?,
-      nome: map['nome'] as String,
-      modelo: map['modelo'] as String,
-      placa: map['placa'] as String,
-      ano: map['ano'] as String,
+      nome: map['nome']?.toString() ?? '',
+      modelo: map['modelo']?.toString() ?? '',
+      placa: map['placa']?.toString() ?? '',
+      ano: map['ano']?.toString() ?? '',
     );
   }
 

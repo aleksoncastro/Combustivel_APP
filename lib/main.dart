@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'database/supabase_config.dart';
 import 'telas/tela_dashboard.dart';
 import 'telas/tela_historico.dart';
 import 'telas/tela_veiculos.dart';
 import 'telas/tela_cadastro_abastecimento.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  await Supabase.initialize(
+    url: SupabaseConfig.url,
+    anonKey: SupabaseConfig.anonKey,
+  );
+
   runApp(const CombustivelApp());
 }
 

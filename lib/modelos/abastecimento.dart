@@ -51,16 +51,16 @@ class Abastecimento {
     return Abastecimento(
       id: map['id'] as int?,
       veiculoId: map['veiculoId'] as int,
-      nomeVeiculo: map['nomeVeiculo'] as String,
-      posto: map['posto'] as String,
-      tipoCombustivel: map['tipoCombustivel'] as String,
+      nomeVeiculo: map['nomeVeiculo']?.toString() ?? '',
+      posto: map['posto']?.toString() ?? '',
+      tipoCombustivel: map['tipoCombustivel']?.toString() ?? '',
       litros: (map['litros'] as num).toDouble(),
       valorPorLitro: (map['valorPorLitro'] as num).toDouble(),
       kmAtual: (map['kmAtual'] as num).toDouble(),
       kmAnterior: map['kmAnterior'] != null
           ? (map['kmAnterior'] as num).toDouble()
           : null,
-      data: map['data'] as String,
+      data: map['data']?.toString() ?? '',
     );
   }
 }

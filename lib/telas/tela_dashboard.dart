@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
+import '../database/supabase_repository.dart';
 import '../modelos/abastecimento.dart';
 import '../widgets/carrossel_destaques_widget.dart';
 import '../widgets/resumo_card_widget.dart';
@@ -14,7 +14,7 @@ class TelaDashboard extends StatefulWidget {
 }
 
 class _TelaDashboardState extends State<TelaDashboard> {
-  final _db = DatabaseHelper.instancia;
+  final _db = SupabaseRepository.instancia;
   Map<String, double> _resumo = {};
   List<Abastecimento> _recentes = [];
   bool _carregando = true;

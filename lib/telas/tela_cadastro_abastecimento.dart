@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
+import '../database/supabase_repository.dart';
 import '../modelos/abastecimento.dart';
 import '../modelos/veiculo.dart';
 import '../widgets/header_widget.dart';
@@ -15,7 +15,7 @@ class TelaCadastroAbastecimento extends StatefulWidget {
 
 class _TelaCadastroAbastecimentoState
     extends State<TelaCadastroAbastecimento> {
-  final _db = DatabaseHelper.instancia;
+  final _db = SupabaseRepository.instancia;
 
   final _postoController = TextEditingController();
   final _litrosController = TextEditingController();

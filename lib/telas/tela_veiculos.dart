@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../database/database_helper.dart';
+import '../database/supabase_repository.dart';
 import '../modelos/veiculo.dart';
 import '../widgets/veiculo_card_widget.dart';
 import '../widgets/texto_formatado_widget.dart';
@@ -13,7 +13,7 @@ class TelaVeiculos extends StatefulWidget {
 }
 
 class _TelaVeiculosState extends State<TelaVeiculos> {
-  final _db = DatabaseHelper.instancia;
+  final _db = SupabaseRepository.instancia;
   List<Veiculo> _veiculos = [];
   bool _carregando = true;
 

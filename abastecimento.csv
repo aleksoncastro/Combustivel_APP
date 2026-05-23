@@ -1,0 +1,2 @@
+id,veiculoId,nomeVeiculo,posto,tipoCombustivel,litros,valorPorLitro,kmAtual,kmAnterior,data
+1,1,Meu Carro,Posto Central,Gasolina,40.5,5.50,150000,149600,2026-05-22
