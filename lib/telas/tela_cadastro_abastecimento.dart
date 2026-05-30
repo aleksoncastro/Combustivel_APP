@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../database/supabase_repository.dart';
+import 'package:provider/provider.dart';
+import '../controllers/veiculo_controller.dart';
+import '../controllers/abastecimento_controller.dart';
 import '../modelos/abastecimento.dart';
 import '../modelos/veiculo.dart';
 import '../widgets/header_widget.dart';
@@ -15,7 +17,6 @@ class TelaCadastroAbastecimento extends StatefulWidget {
 
 class _TelaCadastroAbastecimentoState
     extends State<TelaCadastroAbastecimento> {
-  final _db = SupabaseRepository.instancia;
 
   final _postoController = TextEditingController();
   final _litrosController = TextEditingController();
@@ -23,10 +24,8 @@ class _TelaCadastroAbastecimentoState
   final _kmAtualController = TextEditingController();
   final _kmAnteriorController = TextEditingController();
 
-  List<Veiculo> _veiculos = [];
   Veiculo? _veiculoSelecionado;
   String _tipoCombustivel = 'Gasolina';
-  bool _salvando = false;
 
   final List<String> _tiposCombustivel = ['Gasolina', 'Etanol', 'Diesel', 'GNV'];
 
@@ -43,7 +42,9 @@ class _TelaCadastroAbastecimentoState
   @override
   void initState() {
     super.initState();
-    _carregarVeiculos();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<VeiculoController>().carregarVeiculos();
+    });
     _litrosController.addListener(() => setState(() {}));
     _valorPorLitroController.addListener(() => setState(() {}));
   }
@@ -56,11 +57,6 @@ class _TelaCadastroAbastecimentoState
     _kmAtualController.dispose();
     _kmAnteriorController.dispose();
     super.dispose();
-  }
-
-  Future<void> _carregarVeiculos() async {
-    final lista = await _db.listarVeiculos();
-    setState(() => _veiculos = lista);
   }
 
   String _dataAtual() {
@@ -95,36 +91,50 @@ class _TelaCadastroAbastecimentoState
       return;
     }
 
-    setState(() => _salvando = true);
-
-    final a = Abastecimento(
-      veiculoId: _veiculoSelecionado!.id!,
-      nomeVeiculo: _veiculoSelecionado!.nome,
-      posto: _postoController.text.trim(),
-      tipoCombustivel: _tipoCombustivel,
-      litros: double.parse(_litrosController.text.replaceAll(',', '.')),
-      valorPorLitro:
-          double.parse(_valorPorLitroController.text.replaceAll(',', '.')),
-      kmAtual:
-          double.parse(_kmAtualController.text.replaceAll(',', '.')),
-      kmAnterior: _kmAnteriorController.text.trim().isNotEmpty
-          ? double.tryParse(
-              _kmAnteriorController.text.replaceAll(',', '.'))
-          : null,
-      data: _dataAtualIso(),
-    );
-
-    await _db.inserirAbastecimento(a);
-    setState(() => _salvando = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Abastecimento salvo com sucesso!'),
-          backgroundColor: Colors.green,
-        ),
+    try {
+      final a = Abastecimento(
+        veiculoId: _veiculoSelecionado!.id!,
+        nomeVeiculo: _veiculoSelecionado!.nome,
+        posto: _postoController.text.trim(),
+        tipoCombustivel: _tipoCombustivel,
+        litros: double.parse(_litrosController.text.replaceAll(',', '.')),
+        valorPorLitro:
+            double.parse(_valorPorLitroController.text.replaceAll(',', '.')),
+        kmAtual:
+            double.parse(_kmAtualController.text.replaceAll(',', '.')),
+        kmAnterior: _kmAnteriorController.text.trim().isNotEmpty
+            ? double.tryParse(
+                _kmAnteriorController.text.replaceAll(',', '.'))
+            : null,
+        data: _dataAtualIso(),
       );
-      Navigator.pop(context, true);
+
+      final now = DateTime.now();
+      final mesAnoParam = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+
+      await context.read<AbastecimentoController>().inserirAbastecimento(
+            a,
+            mesAnoFiltro: mesAnoParam,
+          );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Abastecimento salvo com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar abastecimento: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -141,6 +151,15 @@ class _TelaCadastroAbastecimentoState
 
   @override
   Widget build(BuildContext context) {
+    final veiculos = context.watch<VeiculoController>().veiculos;
+    final salvando = context.watch<AbastecimentoController>().carregando;
+
+    // Garante que o veículo selecionado ainda existe na lista recém carregada
+    if (_veiculoSelecionado != null &&
+        !veiculos.any((v) => v.id == _veiculoSelecionado!.id)) {
+      _veiculoSelecionado = null;
+    }
+
     return Scaffold(
       appBar: const HeaderWidget(title: 'Novo Abastecimento'),
       body: SingleChildScrollView(
@@ -155,7 +174,7 @@ class _TelaCadastroAbastecimentoState
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             const SizedBox(height: 8),
-            if (_veiculos.isEmpty)
+            if (veiculos.isEmpty)
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -180,9 +199,11 @@ class _TelaCadastroAbastecimentoState
               )
             else
               DropdownButtonFormField<Veiculo>(
-                value: _veiculoSelecionado,
+                initialValue: _veiculoSelecionado != null
+                    ? veiculos.firstWhere((v) => v.id == _veiculoSelecionado!.id, orElse: () => veiculos.first)
+                    : null,
                 decoration: _deco('Selecione o veículo', Icons.directions_car),
-                items: _veiculos
+                items: veiculos
                     .map((v) => DropdownMenuItem(
                           value: v,
                           child: Text('${v.nome} (${v.placa})'),
@@ -322,8 +343,8 @@ class _TelaCadastroAbastecimentoState
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: _salvando ? null : _salvar,
-                icon: _salvando
+                onPressed: salvando ? null : _salvar,
+                icon: salvando
                     ? const SizedBox(
                         width: 18,
                         height: 18,

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../database/supabase_repository.dart';
+import 'package:provider/provider.dart';
+import '../controllers/abastecimento_controller.dart';
 import '../modelos/abastecimento.dart';
 import '../widgets/abastecimento_card_widget.dart';
 import '../widgets/texto_formatado_widget.dart';
+import '../services/pdf_service.dart';
 import 'tela_detalhe_abastecimento.dart';
 
 class TelaHistorico extends StatefulWidget {
@@ -13,11 +15,8 @@ class TelaHistorico extends StatefulWidget {
 }
 
 class _TelaHistoricoState extends State<TelaHistorico> {
-  final _db = SupabaseRepository.instancia;
-  List<Abastecimento> _todos = [];
-  List<Abastecimento> _filtrados = [];
-  bool _carregando = true;
   String _filtroCombustivel = 'Todos';
+  bool _isExportando = false;
 
   final List<String> _combustiveis = [
     'Todos',
@@ -30,27 +29,9 @@ class _TelaHistoricoState extends State<TelaHistorico> {
   @override
   void initState() {
     super.initState();
-    _carregarDados();
-  }
-
-  Future<void> _carregarDados() async {
-    setState(() => _carregando = true);
-    final lista = await _db.listarAbastecimentos();
-    setState(() {
-      _todos = lista;
-      _aplicarFiltro();
-      _carregando = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AbastecimentoController>().carregarAbastecimentos();
     });
-  }
-
-  void _aplicarFiltro() {
-    if (_filtroCombustivel == 'Todos') {
-      _filtrados = List.from(_todos);
-    } else {
-      _filtrados = _todos
-          .where((a) => a.tipoCombustivel == _filtroCombustivel)
-          .toList();
-    }
   }
 
   Future<void> _deletar(Abastecimento a) async {
@@ -72,27 +53,68 @@ class _TelaHistoricoState extends State<TelaHistorico> {
         ],
       ),
     );
+    if (!mounted) return;
     if (confirmar == true && a.id != null) {
-      await _db.deletarAbastecimento(a.id!);
+      try {
+        await context.read<AbastecimentoController>().deletarAbastecimento(a.id!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Abastecimento removido!'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao excluir: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _exportarPdf(List<Abastecimento> filtrados) async {
+    if (filtrados.isEmpty) return;
+    setState(() => _isExportando = true);
+    try {
+      final pdfService = PdfService();
+      await pdfService.gerarECompartilharPdf(filtrados);
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Abastecimento removido!'),
+          SnackBar(
+            content: Text('Erro ao exportar PDF: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
-      _carregarDados();
+    } finally {
+      if (mounted) {
+        setState(() => _isExportando = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<AbastecimentoController>();
+    final todos = controller.abastecimentos;
+    final carregando = controller.carregando;
+
+    final filtrados = _filtroCombustivel == 'Todos'
+        ? todos
+        : todos.where((a) => a.tipoCombustivel == _filtroCombustivel).toList();
+
     return Column(
       children: [
         // Filtro por combustível
         Container(
-          color: const Color(0xFF1565C0).withOpacity(0.05),
+          color: const Color(0xFF1565C0).withValues(alpha: 0.05),
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -103,7 +125,6 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                   onTap: () {
                     setState(() {
                       _filtroCombustivel = c;
-                      _aplicarFiltro();
                     });
                   },
                   child: AnimatedContainer(
@@ -139,11 +160,46 @@ class _TelaHistoricoState extends State<TelaHistorico> {
           ),
         ),
 
+        // Botão Exportar PDF
+        if (filtrados.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 12, right: 16, bottom: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _isExportando ? null : () => _exportarPdf(filtrados),
+                  icon: _isExportando
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Icon(Icons.picture_as_pdf, size: 18, color: Colors.white),
+                  label: const Text(
+                    'Exportar PDF',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1565C0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         // Lista
         Expanded(
-          child: _carregando
+          child: carregando && todos.isEmpty
               ? const Center(child: CircularProgressIndicator())
-              : _filtrados.isEmpty
+              : filtrados.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -160,21 +216,21 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                       ),
                     )
                   : RefreshIndicator(
-                      onRefresh: _carregarDados,
+                      onRefresh: () => controller.carregarAbastecimentos(),
                       child: ListView.builder(
                         padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _filtrados.length,
+                        itemCount: filtrados.length,
                         itemBuilder: (context, i) {
                           return AbastecimentoCardWidget(
-                            abastecimento: _filtrados[i],
-                            onDeletar: () => _deletar(_filtrados[i]),
+                            abastecimento: filtrados[i],
+                            onDeletar: () => _deletar(filtrados[i]),
                             onTap: () async {
                               await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) =>
                                       TelaDetalheAbastecimento(
-                                    abastecimento: _filtrados[i],
+                                    abastecimento: filtrados[i],
                                   ),
                                 ),
                               );

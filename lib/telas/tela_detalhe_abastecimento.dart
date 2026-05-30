@@ -1,15 +1,45 @@
 import 'package:flutter/material.dart';
 import '../modelos/abastecimento.dart';
+import '../services/pdf_service.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/texto_formatado_widget.dart';
 
-class TelaDetalheAbastecimento extends StatelessWidget {
+class TelaDetalheAbastecimento extends StatefulWidget {
   final Abastecimento abastecimento;
 
   const TelaDetalheAbastecimento({
     super.key,
     required this.abastecimento,
   });
+
+  @override
+  State<TelaDetalheAbastecimento> createState() =>
+      _TelaDetalheAbastecimentoState();
+}
+
+class _TelaDetalheAbastecimentoState extends State<TelaDetalheAbastecimento> {
+  bool _isExportando = false;
+
+  Future<void> _exportarComprovante() async {
+    setState(() => _isExportando = true);
+    try {
+      final pdfService = PdfService();
+      await pdfService.gerarPdfIndividual(widget.abastecimento);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao exportar PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportando = false);
+      }
+    }
+  }
 
   Widget _linha(String label, String valor, IconData icone, Color cor) {
     return Padding(
@@ -50,8 +80,42 @@ class TelaDetalheAbastecimento extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final a = widget.abastecimento;
+
     return Scaffold(
-      appBar: const HeaderWidget(title: 'Detalhes do Abastecimento'),
+      appBar: AppBar(
+        title: const Text(
+          'Detalhes do Abastecimento',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: const Color(0xFF1565C0),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          // ── Botão exportar comprovante ─────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: _isExportando
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  )
+                : Tooltip(
+                    message: 'Exportar comprovante PDF',
+                    child: IconButton(
+                      onPressed: _exportarComprovante,
+                      icon: const Icon(Icons.picture_as_pdf, color: Colors.white),
+                    ),
+                  ),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -74,14 +138,13 @@ class TelaDetalheAbastecimento extends StatelessWidget {
                       color: Colors.white70, size: 40),
                   const SizedBox(height: 8),
                   TextoFormatado(
-                    texto: abastecimento.tipoCombustivel,
+                    texto: a.tipoCombustivel,
                     style: const TextStyle(
                         color: Colors.white70, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   TextoFormatado(
-                    texto:
-                        'R\$ ${abastecimento.valorTotal.toStringAsFixed(2)}',
+                    texto: 'R\$ ${a.valorTotal.toStringAsFixed(2)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 32,
@@ -90,7 +153,7 @@ class TelaDetalheAbastecimento extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   TextoFormatado(
-                    texto: abastecimento.data,
+                    texto: a.data,
                     style: const TextStyle(
                         color: Colors.white60, fontSize: 13),
                   ),
@@ -113,36 +176,67 @@ class TelaDetalheAbastecimento extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _linha('Veículo', abastecimento.nomeVeiculo,
+                  _linha('Veículo', a.nomeVeiculo,
                       Icons.directions_car, const Color(0xFF1565C0)),
                   const Divider(),
-                  _linha('Posto', abastecimento.posto,
+                  _linha('Posto', a.posto,
                       Icons.store, Colors.orange),
                   const Divider(),
                   _linha('Litros abastecidos',
-                      '${abastecimento.litros.toStringAsFixed(3)} L',
+                      '${a.litros.toStringAsFixed(3)} L',
                       Icons.water_drop, Colors.teal),
                   const Divider(),
                   _linha('Valor por litro',
-                      'R\$ ${abastecimento.valorPorLitro.toStringAsFixed(3)}',
+                      'R\$ ${a.valorPorLitro.toStringAsFixed(3)}',
                       Icons.monetization_on, Colors.green),
                   const Divider(),
                   _linha('Quilometragem atual',
-                      '${abastecimento.kmAtual.toStringAsFixed(0)} km',
+                      '${a.kmAtual.toStringAsFixed(0)} km',
                       Icons.speed, Colors.purple),
-                  if (abastecimento.kmAnterior != null) ...[
+                  if (a.kmAnterior != null) ...[
                     const Divider(),
                     _linha('Km anterior',
-                        '${abastecimento.kmAnterior!.toStringAsFixed(0)} km',
+                        '${a.kmAnterior!.toStringAsFixed(0)} km',
                         Icons.history, Colors.grey),
                   ],
-                  if (abastecimento.mediaConsumo != null) ...[
+                  if (a.mediaConsumo != null) ...[
                     const Divider(),
                     _linha('Média de consumo',
-                        '${abastecimento.mediaConsumo!.toStringAsFixed(2)} km/L',
+                        '${a.mediaConsumo!.toStringAsFixed(2)} km/L',
                         Icons.eco, Colors.green),
                   ],
                 ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // ── Botão de exportar no corpo também ─────────────────────────
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isExportando ? null : _exportarComprovante,
+                icon: _isExportando
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.picture_as_pdf,
+                        size: 20, color: Colors.white),
+                label: Text(
+                  _isExportando ? 'Gerando PDF...' : 'Exportar Comprovante PDF',
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1565C0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
               ),
             ),
           ],

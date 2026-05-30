@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../database/supabase_repository.dart';
+import 'package:provider/provider.dart';
+import '../controllers/veiculo_controller.dart';
 import '../modelos/veiculo.dart';
 import '../widgets/veiculo_card_widget.dart';
 import '../widgets/texto_formatado_widget.dart';
@@ -13,22 +14,11 @@ class TelaVeiculos extends StatefulWidget {
 }
 
 class _TelaVeiculosState extends State<TelaVeiculos> {
-  final _db = SupabaseRepository.instancia;
-  List<Veiculo> _veiculos = [];
-  bool _carregando = true;
-
   @override
   void initState() {
     super.initState();
-    _carregarVeiculos();
-  }
-
-  Future<void> _carregarVeiculos() async {
-    setState(() => _carregando = true);
-    final lista = await _db.listarVeiculos();
-    setState(() {
-      _veiculos = lista;
-      _carregando = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<VeiculoController>().carregarVeiculos();
     });
   }
 
@@ -52,36 +42,50 @@ class _TelaVeiculosState extends State<TelaVeiculos> {
         ],
       ),
     );
+    if (!mounted) return;
     if (confirmar == true && v.id != null) {
-      await _db.deletarVeiculo(v.id!);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veículo removido!'),
-            backgroundColor: Colors.red,
-          ),
-        );
+      try {
+        await context.read<VeiculoController>().deletarVeiculo(v.id!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Veículo removido!'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao excluir veículo: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
-      _carregarVeiculos();
     }
   }
 
   Future<void> _abrirCadastro() async {
-    final resultado = await Navigator.push<bool>(
+    await Navigator.push(
       context,
       MaterialPageRoute(
           builder: (_) => const TelaCadastroVeiculo()),
     );
-    if (resultado == true) _carregarVeiculos();
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<VeiculoController>();
+    final veiculos = controller.veiculos;
+    final carregando = controller.carregando;
+
     return Stack(
       children: [
-        _carregando
+        carregando && veiculos.isEmpty
             ? const Center(child: CircularProgressIndicator())
-            : _veiculos.isEmpty
+            : veiculos.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -104,13 +108,13 @@ class _TelaVeiculosState extends State<TelaVeiculos> {
                     ),
                   )
                 : RefreshIndicator(
-                    onRefresh: _carregarVeiculos,
+                    onRefresh: () => controller.carregarVeiculos(),
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      itemCount: _veiculos.length,
+                      itemCount: veiculos.length,
                       itemBuilder: (context, i) => VeiculoCardWidget(
-                        veiculo: _veiculos[i],
-                        onDeletar: () => _deletar(_veiculos[i]),
+                        veiculo: veiculos[i],
+                        onDeletar: () => _deletar(veiculos[i]),
                       ),
                     ),
                   ),
@@ -119,6 +123,7 @@ class _TelaVeiculosState extends State<TelaVeiculos> {
           bottom: 20,
           right: 20,
           child: FloatingActionButton.extended(
+            heroTag: 'fab_veiculos',
             onPressed: _abrirCadastro,
             backgroundColor: const Color(0xFF1565C0),
             icon: const Icon(Icons.add, color: Colors.white),

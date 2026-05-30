@@ -1,44 +1,19 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../modelos/veiculo.dart';
 import '../modelos/abastecimento.dart';
 
-class SupabaseRepository {
-  static final SupabaseRepository instancia = SupabaseRepository._interno();
-  SupabaseRepository._interno();
-
+class AbastecimentoService {
   final SupabaseClient _client = Supabase.instance.client;
 
-  // ─── VEÍCULOS ────────────────────────────────────────────
-  Future<int> inserirVeiculo(Veiculo v) async {
-    final map = v.toMap();
-    if (v.id == null) {
-      map.remove('id');
-    }
-    final response = await _client.from('veiculo').insert(map).select('id').single();
-    final novoId = response['id'] as int;
-    v.id = novoId;
-    return novoId;
-  }
-
-  Future<List<Veiculo>> listarVeiculos() async {
-    final response = await _client.from('veiculo').select();
-    final List list = response;
-    return list
-        .map((m) => Veiculo.fromMap(Map<String, dynamic>.from(m)))
-        .toList()
-      ..sort((a, b) => a.nome.compareTo(b.nome));
-  }
-
-  Future<void> deletarVeiculo(int id) async {
-    await _client.from('veiculo').delete().eq('id', id);
-  }
-
-  // ─── ABASTECIMENTOS ──────────────────────────────────────
   Future<int> inserirAbastecimento(Abastecimento a) async {
+    final currentUser = _client.auth.currentUser;
+    if (currentUser == null) throw Exception('Usuário não autenticado');
+
     final map = a.toMap();
     if (a.id == null) {
       map.remove('id');
     }
+    map['user_id'] = currentUser.id;
+
     final response = await _client.from('abastecimento').insert(map).select('id').single();
     final novoId = response['id'] as int;
     a.id = novoId;
@@ -46,7 +21,10 @@ class SupabaseRepository {
   }
 
   Future<List<Abastecimento>> listarAbastecimentos() async {
-    final response = await _client.from('abastecimento').select();
+    final currentUser = _client.auth.currentUser;
+    if (currentUser == null) return [];
+
+    final response = await _client.from('abastecimento').select().eq('user_id', currentUser.id);
     final List list = response;
     return list
         .map((m) => Abastecimento.fromMap(Map<String, dynamic>.from(m)))
@@ -55,7 +33,10 @@ class SupabaseRepository {
   }
 
   Future<List<Abastecimento>> listarAbastecimentosPorVeiculo(int veiculoId) async {
-    final response = await _client.from('abastecimento').select().eq('veiculoId', veiculoId);
+    final currentUser = _client.auth.currentUser;
+    if (currentUser == null) return [];
+
+    final response = await _client.from('abastecimento').select().eq('veiculoId', veiculoId).eq('user_id', currentUser.id);
     final List list = response;
     return list
         .map((m) => Abastecimento.fromMap(Map<String, dynamic>.from(m)))
@@ -64,10 +45,12 @@ class SupabaseRepository {
   }
 
   Future<void> deletarAbastecimento(int id) async {
-    await _client.from('abastecimento').delete().eq('id', id);
+    final currentUser = _client.auth.currentUser;
+    if (currentUser == null) throw Exception('Usuário não autenticado');
+
+    await _client.from('abastecimento').delete().eq('id', id).eq('user_id', currentUser.id);
   }
 
-  // ─── RESUMO DO MÊS ───────────────────────────────────────
   Future<Map<String, double>> resumoMes(String mesAno) async {
     final lista = await listarAbastecimentos();
     final doMes = lista.where((a) => a.data.startsWith(mesAno)).toList();

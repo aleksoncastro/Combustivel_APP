@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../database/supabase_repository.dart';
-import '../modelos/abastecimento.dart';
+import 'package:provider/provider.dart';
+import '../controllers/abastecimento_controller.dart';
 import '../widgets/carrossel_destaques_widget.dart';
 import '../widgets/resumo_card_widget.dart';
 import '../widgets/abastecimento_card_widget.dart';
@@ -14,11 +14,6 @@ class TelaDashboard extends StatefulWidget {
 }
 
 class _TelaDashboardState extends State<TelaDashboard> {
-  final _db = SupabaseRepository.instancia;
-  Map<String, double> _resumo = {};
-  List<Abastecimento> _recentes = [];
-  bool _carregando = true;
-
   String get _mesAtual {
     final now = DateTime.now();
     return '${now.month.toString().padLeft(2, '0')}/${now.year}';
@@ -32,25 +27,20 @@ class _TelaDashboardState extends State<TelaDashboard> {
   @override
   void initState() {
     super.initState();
-    _carregarDados();
-  }
-
-  Future<void> _carregarDados() async {
-    setState(() => _carregando = true);
-    final resumo = await _db.resumoMes(_mesAnoParam);
-    final todos = await _db.listarAbastecimentos();
-    setState(() {
-      _resumo = resumo;
-      _recentes = todos.take(3).toList();
-      _carregando = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AbastecimentoController>().carregarDashboard(_mesAnoParam);
     });
   }
 
-  List<DestaqueItem> get _destaques {
-    final gasto = _resumo['totalGasto'] ?? 0;
-    final litros = _resumo['totalLitros'] ?? 0;
-    final media = _resumo['mediaConsumo'] ?? 0;
-    final qtd = _resumo['qtdAbastecimentos'] ?? 0;
+  Future<void> _carregarDados() async {
+    await context.read<AbastecimentoController>().carregarDashboard(_mesAnoParam);
+  }
+
+  List<DestaqueItem> _getDestaques(Map<String, double> resumo) {
+    final gasto = resumo['totalGasto'] ?? 0;
+    final litros = resumo['totalLitros'] ?? 0;
+    final media = resumo['mediaConsumo'] ?? 0;
+    final qtd = resumo['qtdAbastecimentos'] ?? 0;
 
     return [
       DestaqueItem(
@@ -82,9 +72,16 @@ class _TelaDashboardState extends State<TelaDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<AbastecimentoController>();
+    final resumo = controller.resumoMesData;
+    final recentes = controller.abastecimentos.take(3).toList();
+    final carregando = controller.carregando;
+
+    final destaques = _getDestaques(resumo);
+
     return RefreshIndicator(
       onRefresh: _carregarDados,
-      child: _carregando
+      child: carregando && resumo.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -132,7 +129,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
                               child: ResumoCardWidget(
                                 titulo: 'Total Gasto',
                                 valor:
-                                    'R\$ ${(_resumo['totalGasto'] ?? 0).toStringAsFixed(2)}',
+                                    'R\$ ${(resumo['totalGasto'] ?? 0).toStringAsFixed(2)}',
                                 icone: Icons.attach_money,
                                 cor: const Color(0xFF1565C0),
                               ),
@@ -142,7 +139,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
                               child: ResumoCardWidget(
                                 titulo: 'Litros',
                                 valor:
-                                    '${(_resumo['totalLitros'] ?? 0).toStringAsFixed(2)} L',
+                                    '${(resumo['totalLitros'] ?? 0).toStringAsFixed(2)} L',
                                 icone: Icons.water_drop,
                                 cor: Colors.teal,
                               ),
@@ -155,8 +152,8 @@ class _TelaDashboardState extends State<TelaDashboard> {
                             Expanded(
                               child: ResumoCardWidget(
                                 titulo: 'Média km/L',
-                                valor: (_resumo['mediaConsumo'] ?? 0) > 0
-                                    ? '${(_resumo['mediaConsumo']!).toStringAsFixed(1)} km/L'
+                                valor: (resumo['mediaConsumo'] ?? 0) > 0
+                                    ? '${(resumo['mediaConsumo']!).toStringAsFixed(1)} km/L'
                                     : '--',
                                 icone: Icons.speed,
                                 cor: Colors.orange,
@@ -167,7 +164,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
                               child: ResumoCardWidget(
                                 titulo: 'Abastecimentos',
                                 valor:
-                                    '${(_resumo['qtdAbastecimentos'] ?? 0).toInt()}x',
+                                    '${(resumo['qtdAbastecimentos'] ?? 0).toInt()}x',
                                 icone: Icons.local_gas_station,
                                 cor: Colors.purple,
                               ),
@@ -192,7 +189,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
                       ),
                     ),
                   ),
-                  CarrosselDestaquesWidget(itens: _destaques),
+                  CarrosselDestaquesWidget(itens: destaques),
 
                   const SizedBox(height: 20),
 
@@ -213,7 +210,7 @@ class _TelaDashboardState extends State<TelaDashboard> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  if (_recentes.isEmpty)
+                  if (recentes.isEmpty)
                     Padding(
                       padding: const EdgeInsets.all(24),
                       child: Center(
@@ -228,10 +225,10 @@ class _TelaDashboardState extends State<TelaDashboard> {
                     ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _recentes.length,
+                      itemCount: recentes.length,
                       itemBuilder: (context, i) {
                         return AbastecimentoCardWidget(
-                          abastecimento: _recentes[i],
+                          abastecimento: recentes[i],
                         );
                       },
                     ),

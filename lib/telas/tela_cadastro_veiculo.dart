@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../database/supabase_repository.dart';
+import 'package:provider/provider.dart';
+import '../controllers/veiculo_controller.dart';
 import '../modelos/veiculo.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/texto_formatado_widget.dart';
@@ -12,12 +13,10 @@ class TelaCadastroVeiculo extends StatefulWidget {
 }
 
 class _TelaCadastroVeiculoState extends State<TelaCadastroVeiculo> {
-  final _db = SupabaseRepository.instancia;
   final _nomeController = TextEditingController();
   final _modeloController = TextEditingController();
   final _placaController = TextEditingController();
   final _anoController = TextEditingController();
-  bool _salvando = false;
 
   @override
   void dispose() {
@@ -42,24 +41,32 @@ class _TelaCadastroVeiculoState extends State<TelaCadastroVeiculo> {
       return;
     }
 
-    setState(() => _salvando = true);
-    final v = Veiculo(
-      nome: _nomeController.text.trim(),
-      modelo: _modeloController.text.trim(),
-      placa: _placaController.text.trim().toUpperCase(),
-      ano: _anoController.text.trim(),
-    );
-    await _db.inserirVeiculo(v);
-    setState(() => _salvando = false);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veículo salvo com sucesso!'),
-          backgroundColor: Colors.green,
-        ),
+    try {
+      final v = Veiculo(
+        nome: _nomeController.text.trim(),
+        modelo: _modeloController.text.trim(),
+        placa: _placaController.text.trim().toUpperCase(),
+        ano: _anoController.text.trim(),
       );
-      Navigator.pop(context, true);
+      await context.read<VeiculoController>().inserirVeiculo(v);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Veículo salvo com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar veículo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -75,6 +82,9 @@ class _TelaCadastroVeiculoState extends State<TelaCadastroVeiculo> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<VeiculoController>();
+    final salvando = controller.carregando;
+
     return Scaffold(
       appBar: const HeaderWidget(title: 'Cadastrar Veículo'),
       body: SingleChildScrollView(
@@ -150,7 +160,7 @@ class _TelaCadastroVeiculoState extends State<TelaCadastroVeiculo> {
                 child: Row(
                   children: [
                     const Icon(Icons.visibility,
-                        color: Color(0xFF1565C0), size: 18),
+                      color: Color(0xFF1565C0), size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextoFormatado(
@@ -171,8 +181,8 @@ class _TelaCadastroVeiculoState extends State<TelaCadastroVeiculo> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: _salvando ? null : _salvar,
-                icon: _salvando
+                onPressed: salvando ? null : _salvar,
+                icon: salvando
                     ? const SizedBox(
                         width: 18,
                         height: 18,

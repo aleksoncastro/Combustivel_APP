@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart';
 import 'database/supabase_config.dart';
+import 'controllers/veiculo_controller.dart';
+import 'controllers/abastecimento_controller.dart';
 import 'telas/tela_dashboard.dart';
 import 'telas/tela_historico.dart';
 import 'telas/tela_veiculos.dart';
 import 'telas/tela_cadastro_abastecimento.dart';
+import 'telas/auth_wrapper.dart';
+import 'telas/tela_perfil.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +19,15 @@ void main() async {
     anonKey: SupabaseConfig.anonKey,
   );
 
-  runApp(const CombustivelApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => VeiculoController()),
+        ChangeNotifierProvider(create: (_) => AbastecimentoController()),
+      ],
+      child: const CombustivelApp(),
+    ),
+  );
 }
 
 class CombustivelApp extends StatelessWidget {
@@ -29,7 +42,7 @@ class CombustivelApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF1565C0)),
         useMaterial3: true,
       ),
-      home: const TelaHome(),
+      home: const AuthWrapper(),
     );
   }
 }
@@ -44,18 +57,11 @@ class TelaHome extends StatefulWidget {
 class _TelaHomeState extends State<TelaHome> {
   int _abaSelecionada = 0;
 
-  List<GlobalKey> _telaKeys = [GlobalKey(), GlobalKey(), GlobalKey()];
-
   Future<void> _abrirCadastroAbastecimento() async {
-    final resultado = await Navigator.push<bool>(
+    await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const TelaCadastroAbastecimento()),
     );
-    if (resultado == true) {
-      setState(() {
-        _telaKeys = [GlobalKey(), GlobalKey(), GlobalKey()];
-      });
-    }
   }
 
   @override
@@ -85,14 +91,24 @@ class _TelaHomeState extends State<TelaHome> {
               tooltip: 'Novo abastecimento',
               onPressed: _abrirCadastroAbastecimento,
             ),
+          IconButton(
+            icon: const Icon(Icons.account_circle, color: Colors.white),
+            tooltip: 'Meu Perfil',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TelaPerfil()),
+              );
+            },
+          ),
         ],
       ),
       body: IndexedStack(
         index: _abaSelecionada,
-        children: [
-          TelaDashboard(key: _telaKeys[0]),
-          TelaHistorico(key: _telaKeys[1]),
-          TelaVeiculos(key: _telaKeys[2]),
+        children: const [
+          TelaDashboard(),
+          TelaHistorico(),
+          TelaVeiculos(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
